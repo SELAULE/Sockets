@@ -1,7 +1,5 @@
 #include "socket.h"
 
-#define DATA "Package sent!!!"
-
 void    error(char *msg) {
     perror(msg);
     exit(1);
@@ -13,28 +11,18 @@ void    errornclose(char *msg, int sock) {
     exit(1);
 }
 
-int     main (int argc, char **argv) {
+int     main (void) {
     int     sock;
     struct  sockaddr_in server;
-    struct  hostent *hp;
     char    buff[1024];
 
     sock = socket (AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         error("Socket failed");
     }
-
-
+    
     server.sin_family = AF_INET;
-    if (argc < 2) {
-        error("Give me some");
-    }
-    hp = gethostbyname(argv[1]);
-    if (hp == 0) {
-        errornclose("gethostbyname failed", sock);
-    }
 
-    memcpy (&server.sin_addr, hp->h_addr, hp->h_length);
     server.sin_port = htons (PORT);
 
     if (connect (sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
@@ -55,9 +43,6 @@ int     main (int argc, char **argv) {
             printf("Server: \t%s\n", buff);
         }
     }
-
-    // printf ("%s\n", DATA);
-    // close (sock);
 
     return 0;
 }
