@@ -1,68 +1,56 @@
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include "socket.h"
 
-void    error(char *msg) {
-    perror(msg);
-    exit(1);
-}
+// void    error(char *msg) {
+//     perror(msg);
+//     exit(1);
+// }
 
-int     main(int argc, char **argv) {
+int     main(void) {
 
-    /*variables*/
     int     sock;
     struct  sockaddr_in server;
     int     mysock;
+    struct  sockaddr_in newAddr;
     char    buff[1024];
-    int     rval;
+    socklen_t   addr_size;
+    pid_t   childId;
 
-
-    /* Create socket */
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         error("Failed to connect");
     }
 
+    memset(&server, '\0', sizeof(server));
     server.sin_family = AF_INET;
-    server.sin_addr.s_addr = INADDR_ANY;
     server.sin_port = htons(5000);
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-
-
-    /* Call Bind */
-    if (bind(sock, (struct sockaddr *)&server, sizeof(server))) {
+    if (bind(sock, (struct sockaddr *)&server, sizeof(server)) < 0) {
         error("Failed to bind");
     }
-
-
-    /* Listen */
     listen (sock, 5);
+     while (1) {
+        mysock = accept (sock, (struct sockaddr *) &newAddr, &addr_size);
+        if (mysock < 0)
+            error("Accept failed");
+        printf("Connected to %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
 
-
-    /* Accept */
-    do {
-        mysock = accept (sock, (struct sockaddr *) 0, 0);
-        if (mysock == -1) {
-            perror("Accept failed");
-        } else {
-            memset (buff, 0, sizeof (buff));
-            if (rval = recv(mysock, buff, sizeof(buff), 0) < 0) {
-                error("Reading stream message error");
-            } else if(rval == 0) {
-                printf("Ending connection");
-            } else {
-                printf("MSG: %s\n", buff);
+        if ((childId = fork()) == 0) {
+            close(sock);
+            while(1) {
+                recv(mysock, buff, sizeof(buff), 0);
+                if (strcmp(buff, "exit")) {
+                    printf("Disconnecting from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
+                    break ;
+                } else {
+                    printf ("Client: %s\n", buff);
+                    send(sock, buff, strlen(buff), 0);
+                    bzero(buff, sizeof(buff));
+                }
             }
-                printf("Got the message (rval = %d)", rval);
-
-                close (mysock);
-
         }
-    } while (1);
+        close (mysock);
+    }
 
     return 0;
 }
