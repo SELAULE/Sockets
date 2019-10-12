@@ -2,57 +2,54 @@
 
 
 int     main(int argc, char **argv) {
-
-    int     sock;
-    struct  sockaddr_in server;
-    int     mysock;
-    struct  sockaddr_in newAddr;
-    char    buff[1024];
-    socklen_t   addr_size;
-    pid_t   childId;
+    t_socket t_socket;
+    t_server server;
 
     if (argc != 2) {
         error("No port given");
         // exit(1);
     }
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
+    printf("are at least here!!!!!!");
+    printf("Buddy\t%s\n", t_socket.hostname);
+
+    server.sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (server.sock < 0) {
         error("Failed to connect");
     }
+    printf("%s", argv[1]);
 
-    memset(&server, '\0', sizeof(server));
-    server.sin_family = AF_INET;
-    server.sin_port = htons(atoi(argv[1]));
-    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+    memset(&server.server, '\0', sizeof(server.server));
+    server.server.sin_family = AF_INET;
+    server.server.sin_port = htons(PORT);
+    server.server.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    if (bind(sock, (struct sockaddr *)&server, sizeof(server)) < 0) {
+
+    if (bind(server.sock, (struct sockaddr *)&server.server, sizeof(server.server)) < 0) {
         error("Failed to bind");
     }
-    listen (sock, 10);
+    listen (server.sock, 10);
      while (1) {
-        mysock = accept(sock, (struct sockaddr *) &newAddr, &addr_size);
-        if (mysock < 0)
+        server.mySock = accept(server.sock, (struct sockaddr *) &server.newAddr, &server.addr_size);
+        if (server.mySock < 0)
             error("Accept failed");
-        printf("Connected to %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
-
-        if ((childId = fork()) == 0) {
-            close(sock);
+        printf("Connected to %s:%d\n", inet_ntoa(server.server.sin_addr), ntohs(server.server.sin_port));
+        if ((server.childId = fork()) == 0) {
+            close(server.sock);
             while(1) {
-                recv(mysock, buff, sizeof(buff), 0);
-                if (strcmp(buff, "exit") == 0) {
-                    printf("Disconnecting from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
+                recv(server.mySock, server.buff, sizeof(server.buff), 0);
+                if (strcmp(server.buff, "exit") == 0) {
+                    printf("Disconnecting from %s:%d\n", inet_ntoa(server.server.sin_addr), ntohs(server.server.sin_port));
                     break ;
                 } else {
-                    printf("Client: %s\n", buff);
-                    if (send(mysock, buff, strlen(buff), 0) == -1) {
+                    printf("Client: %s\n", server.buff);
+                    if (send(server.mySock, server.buff, strlen(server.buff), 0) == -1) {
                         printf("Failed to send");
                     }
-                    bzero(buff, sizeof(buff));
+                    bzero(server.buff, sizeof(server.buff));
                 }
             }
         }
-        close (mysock);
+        close (server.mySock);
     }
-
     return 0;
 }

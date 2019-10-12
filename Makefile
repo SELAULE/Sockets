@@ -4,7 +4,7 @@
 SRC = server.c client.c
 NAME1 = server
 NAME2 = client
-FLAGS = -Wall -Wextra -Werror
+FLAGS = -Wall -Wextra -Werror -g -ggdb3
 OBJ = $(SRC:.c=.o)
 
 all: $(NAME1) $(NAME2)
